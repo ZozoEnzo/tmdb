@@ -51,12 +51,11 @@ class DefaultController extends AbstractController
 
 
     /**
-     * @Route("/search", name="movie_information", methods={"POST"})
+     * @Route("/searchMovie", name="movie_information", methods={"POST"})
      */
     public function search(Request $request, CallApiMovie $callApiMovie): Response
     {
         if ($request->isXMLHttpRequest()) {
-
             $search = $request->get('id');
             $movie = $callApiMovie->getMovie($search);
             $video = $callApiMovie->getvideo($search);
@@ -65,6 +64,23 @@ class DefaultController extends AbstractController
                 $movie['youtubeKey'] = $video[0]['key'];
             }
             return new JsonResponse($movie);
+        }
+        return new Response("Error : this is not an ajax query !", 400);
+    }
+
+    /**
+     * @Route("/searchCaractere", name="movie_autocomplete", methods={"POST"})
+     */
+    public function searchCaractere(Request $request, CallApiMovie $callApiMovie): Response
+    {
+        if ($request->isXMLHttpRequest()) {
+            $search = $request->get('query');
+            $movies = $callApiMovie->getMoviesFromLetter($search);
+            $caracteres = [];
+            foreach($movies as $movie){
+                array_push($caracteres,$movie['original_title']);
+            }
+            return new JsonResponse($caracteres);
         }
         return new Response("Error : this is not an ajax query !", 400);
     }

@@ -58,7 +58,7 @@ class CallApiMovie
     {
         $response = $this->client->request(
             'GET',
-            'https://api.themoviedb.org/3/search/movie?api_key='.$this->params->get('app.apikey').'&language=fr-FR&query=$value'
+            "https://api.themoviedb.org/3/search/movie?api_key=".$this->params->get('app.apikey')."&language=fr-FR&query=$value"
         );
         return $response->toArray()['results'];
     }

@@ -83,7 +83,7 @@
                                     </div>
                                     <div class="detail">
                                         <button class="btn btn-primary" onclick="ajaxCall({{ movie.id }})">Voir en
-                                            detail
+                                            détail
                                         </button>
                                     </div>
                                 </div>
@@ -97,6 +97,25 @@
 
 {% endblock %}
 {% block javascripts %}
+    <script>
+        $( function() {
+            $("#search").autocomplete({
+                source: function (request, response) {
+                    $.ajax({
+                        url: "{{ path('movie_autocomplete') }}",
+                        data: {
+                            query: request.term,
+                        },
+                        dataType: 'json',
+                        method: 'post'
+                    }).done(function (data) {
+                        response(data);
+                    });
+                },
+                minLength: 3
+            })
+        } );
+    </script>
     <script>
         function ajaxCall(search) {
             $.ajax({
