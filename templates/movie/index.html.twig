@@ -1,0 +1,184 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{{ asset('css/index.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU"
+          crossorigin="anonymous">
+{% endblock %}
+{% block title %}Movies{% endblock %}
+
+{% block body %}
+    <h1 class="text-center mb-5 title-movie" id="test">Les films populaire</h1>
+    <div class="row mb-3 right">
+        <div class="col-12 right">
+            <div class="input-group">
+                <input type="search" class="form-control rounded" placeholder="Search" aria-label="Search"
+                       aria-describedby="search-addon" id="search" name="search"/>
+                <button type="submit" class="btn btn-outline-primary" onclick="redirectMoviesSearch()">Rechercher
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close text-right">&times;</span>
+            <div class="row">
+                <figure class="col-12 text-center" id="img-modal">
+                </figure>
+                <div class="col-12 text-center">
+                    <h2 class="bold text-center" id="title">
+                    </h2>
+                </div>
+                <div class="col-12" id="date">
+                </div>
+                <div class="col-12" id="synopsis">
+                </div>
+                <div class="col-12" id="duree">
+                </div>
+                <div class="col-12" id="notation">
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="col-12">
+        <div class="row">
+            <div class="col-2">
+                <h2>Catégorie</h2>
+                {# TODO Checker les checkbox lorsqu'ils sont passer dans le paramètre et voir ce qu'il ce passe lorsqu'il n'y en a pas (passer à la page 2 ? puis 3.) #}
+                <form method="post" class="bloc-categorie" action="">
+                    {% for genre in allGenre.genres %}
+                        <div class="form-check">
+                            <input class="form-check-input" name="genres[]" type="checkbox" value="{{ genre.id }}"
+                                   id="{{ genre.id }}" {% if genre.id in genres %}checked{% endif %}/>
+                            <label class="form-check-label" for="flexCheckDefault">
+                                {{ genre.name }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                    <div class="row text-center btn-center">
+                        <button type="submit" class="btn btn-secondary btn-center">Raffraichir</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-8">
+                <ol>
+                    {% for movie in mostPopular %}
+                        {% if movie.original_title is not empty and movie.overview is not empty %}
+                            <li class="mdl row mb-3">
+                                <div class="card entity-card entity-card-list cf">
+                                    <figure class="thumbnail ">
+                                        <a class="xXx thumbnail-container thumbnail-link"
+                                           title="{{ movie.original_title }}"
+                                           href="">
+                                            <img class="thumbnail-img"
+                                                 src="https://image.tmdb.org/t/p/w300{{ movie.backdrop_path }}"
+                                                 alt="{{ movie.original_title }}" width="310" height="auto">
+                                        </a>
+                                    </figure>
+                                    <div class="meta">
+                                        <h2 class="meta-title bold">
+                                            {{ movie.original_title }}
+                                        </h2> {{ movie.vote_average }}/10 ({{ movie.vote_count }} votes)
+                                    </div>
+                                    <div class="date">
+                                        {{ movie.release_date }}
+                                    </div>
+                                    <div class="synopsis">
+                                        <div class="content-txt ">
+                                            {{ movie.overview|slice(0, 100) }}{% if movie.overview|length > 100 %}...{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="detail">
+                                        <button class="btn btn-primary" onclick="ajaxCall({{ movie.id }})">Voir en
+                                            detail
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block javascripts %}
+    <script>
+        function ajaxCall(search) {
+            $.ajax({
+                url: "{{ path('movie_information') }}",
+                method: 'post',
+                data: {'id': search}
+            }).done(function (content) {
+                refreshModal(content);
+            });
+        }
+
+        function refreshModal(content) {
+            document.getElementById('title').innerHTML = content['title'];
+            if (content['youtubeKey'].length > 0 )
+            {
+                document.getElementById('img-modal').innerHTML = '<iframe  id="img-modal" width="560" height="315" src="https://www.youtube.com/embed/'+content['youtubeKey']+'" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+            } else {
+                document.getElementById('img-modal').innerHTML = '<img src="https://image.tmdb.org/t/p/w500'+content['backdrop_path']+'" height="auto">';
+            }
+            document.getElementById('notation').innerHTML = 'Une note de : ' + content['vote_average']+'/10';
+            document.getElementById('synopsis').innerHTML = content['overview'];
+            document.getElementById('date').innerHTML = 'Date de création : ' + content['release_date'];
+            document.getElementById('duree').innerHTML = 'Durée du film : ' + minToHour(content['runtime']);
+            /* https://image.tmdb.org/t/p/w500/iTgM25ftE7YtFgZwUZupVp8A61S.jpg
+            *
+            *
+            *
+            * */
+            var modal = document.getElementById("myModal");
+            setTimeout(() => {
+                    modal.style.display = "block";
+                }, 200
+            )
+
+
+        }
+
+        var modal = document.getElementById("myModal");
+        var span = document.getElementsByClassName("close")[0];
+        span.onclick = function () {
+            modal.style.display = "none";
+        }
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        function minToHour(minutes) {
+            //On test que minutes est bien un nombre entier
+            var Myexp = new RegExp("^[0-9]+$", "g");
+            if (Myexp.test(minutes)) {
+                var nbHour = parseInt(minutes / 60);
+                var nbminuteRestante = (minutes % 60);
+                if (nbminuteRestante == 0) {
+                    alert(nbHour + "h");
+                } else {
+                    return nbHour + "h" + nbminuteRestante;
+                }
+            }
+        }
+
+        function redirectMoviesSearch() {
+            var search = document.getElementById('search');
+            var url = "{{ path('show_movies', {'id': 'value'})|escape('js') }}";
+            url = url.replace("value", search.value);
+            if (search.value !== "") {
+                window.location.href = url
+            } else {
+                alert('Vous n\'avez pas renseigné ce que vous souhaitiez rechercher.');
+            }
+        }
+    </script>
+{% endblock %}
