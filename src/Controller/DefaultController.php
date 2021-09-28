@@ -4,20 +4,68 @@ namespace App\Controller;
 
 use App\Service\CallApiMovie;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
 class DefaultController extends AbstractController
 {
+    /**
+     * @Route("/", name="default")
+     */
+    public function index(CallApiMovie $callApiMovie, Request $request): Response
+    {
+        $movies = [];
+        $genres = [];
+        if (!empty($request->get('genres'))) {
+            $genres = $request->get('genres');
+            foreach ($callApiMovie->getMostPopular() as $film) {
+                if (!empty(array_intersect($film['genre_ids'], $genres)))
+                    array_push($movies, $film);
+            }
+            $movies = array_unique($movies, SORT_REGULAR);
+        }
+        if (empty($movies)) {
+            $movies = $callApiMovie->getMostPopular();
+        }
+
+        return $this->render('movie/index.html.twig', [
+            'allGenre' => $callApiMovie->getListGenreMovie(),
+            'mostPopular' => $movies,
+            'genres' => $genres,
+        ]);
+    }
 
     /**
-     * @Route("/default", name="default")
+     * @Route("/show/movies/{id}", name="show_movies")
      */
-    public function index(CallApiMovie $callApiMovie): Response
+    public function showMovies(CallApiMovie $callApiMovie, $id): Response
     {
-        return $this->render('default/index.html.twig', [
-            'allGenre' => $callApiMovie->getListGenreMovie(),
-            'mostPopular' => $callApiMovie->getMostPopular(),
+        $movies = $callApiMovie->getMoviesFromLetter($id);
+        return $this->render('movie/movies_search.html.twig', [
+            'search' => $id,
+            'movies' => $movies,
         ]);
+    }
+
+
+    /**
+     * @Route("/search", name="movie_information", methods={"POST"})
+     */
+    public function search(Request $request, CallApiMovie $callApiMovie): Response
+    {
+        if ($request->isXMLHttpRequest()) {
+
+            $search = $request->get('id');
+            $movie = $callApiMovie->getMovie($search);
+            $video = $callApiMovie->getvideo($search);
+            $movie['youtubeKey'] = [];
+            if(!empty($video)){
+                $movie['youtubeKey'] = $video[0]['key'];
+            }
+            return new JsonResponse($movie);
+        }
+        return new Response("Error : this is not an ajax query !", 400);
     }
 }
